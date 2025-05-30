@@ -434,7 +434,6 @@ void CHudSayText :: SayTextPrint( const char *pszBuf, int iBufSize, int clientIn
 	}
 
 	m_iFlags |= HUD_DRAW;
-	PlaySound( "misc/talk.wav", 1 );
 
 	if( !g_iUser1 )
 	{
