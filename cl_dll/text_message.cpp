@@ -242,7 +242,7 @@ int CHudTextMessage::MsgFunc_TextMsg( const char *pszName, int iSize, void *pbuf
 	case HUD_PRINTNOTIFY:
 		psz[0] = 1;  // mark this message to go into the notify buffer
 		snprintf( psz+1, MAX_TEXTMSG_STRING - 1, msg_text, szBuf[1], szBuf[2], szBuf[3], szBuf[4] );
-		ConsolePrint( ConvertCRtoNL( psz ) );
+		gEngfuncs.Con_Printf( ConvertCRtoNL( psz ) );
 		break;
 
 	case HUD_PRINTTALK:
