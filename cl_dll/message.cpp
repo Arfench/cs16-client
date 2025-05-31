@@ -417,92 +417,112 @@ int CHudMessage::Draw( float fTime )
 }
 
 
-void CHudMessage::MessageAdd( const char *pName, float time )
+void CHudMessage::MessageAdd(const char* pName, float time)
 {
-	int i,j;
-	client_textmessage_t *tempMessage;
+    client_textmessage_t* tempMessage = nullptr;
+    client_textmessage_t* message = nullptr;
 
-	for ( i = 0; i < maxHUDMessages; i++ )
-	{
-		if ( !m_pMessages[i] )
-		{
-			// Trim off a leading # if it's there
-			if ( pName[0] == '#' ) 
-				tempMessage = TextMessageGet( pName+1 );
-			else
-				tempMessage = TextMessageGet( pName );
+    // look for an empty slot in the message array
+    for (int i = 0; i < maxHUDMessages; i++)
+    {
+        if (!m_pMessages[i])
+        {
+            // handle localized messages (those starting with #)
+            if (pName[0] == '#')
+            {
+                tempMessage = TextMessageGet(pName + 1); // skip the # character
+            }
+            else
+            {
+                tempMessage = TextMessageGet(pName);
+            }
 
-			client_textmessage_t *message;
-			if( tempMessage )
-			{
-				if( tempMessage->pMessage[0] == '#' )
-				{
-					message = AllocMessage( CHudTextMessage::BufferedLocaliseTextString( tempMessage->pMessage ), tempMessage );
-				}
-				else if( !strcmp( tempMessage->pName, "Custom" ) ) // Hey, it's mine way of detecting allocated message
-				{
-					message = AllocMessage( tempMessage->pMessage, tempMessage );
-				}
-				else
-				{
-					message = tempMessage;
-				}
-			}
-			else
-			{
-				if( pName[0] == '#' )
-				{
-					pName = Localize( pName + 1 );
-				}
+            // if we found the message in titles.txt
+            if (tempMessage)
+            {
+                // handle localized message text
+                if (tempMessage->pMessage[0] == '#')
+                {
+                    message = AllocMessage(CHudTextMessage::BufferedLocaliseTextString(tempMessage->pMessage), tempMessage);
+                }
+                // handle custom messages
+                else if (!strcmp(tempMessage->pName, "Custom"))
+                {
+                    message = AllocMessage(tempMessage->pMessage, tempMessage);
+                }
+                else
+                {
+                    message = tempMessage; // use the message as-is
+                }
+            }
+            else // message not found in titles.txt
+            {
+                // handle localization if needed
+                const char* localizedName = (pName[0] == '#') ? Localize(pName + 1) : pName;
+                message = AllocMessage(localizedName);
 
-				// If we couldnt find it in the titles.txt, just create it
-				message = AllocMessage( pName );
+                // set default values for the new message
+                message->effect = 2; // fade in/out effect
+                message->r1 = message->g1 = message->b1 = message->a1 = 100; // primary color (RGBA)
+                message->r2 = 240; // secondary color
+                message->g2 = 110;
+                message->b2 = 0;
+                message->a2 = 0;
+                message->x = -1; // centered horizontally
+                message->y = 0.7; // 70% from top of screen
+                message->fadein = 0.01; // fade in time
+                message->fadeout = 1.5; // fade out time
+                message->fxtime = 0.25; // effect time
+                message->holdtime = 5; // how long to stay visible
+            }
 
-				message->effect = 2;
-				message->r1 = message->g1 = message->b1 = message->a1 = 100;
-				message->r2 = 240;
-				message->g2 = 110;
-				message->b2 = 0;
-				message->a2 = 0;
-				message->x = -1;		// Centered
-				message->y = 0.7;
-				message->fadein = 0.01;
-				message->fadeout = 1.5;
-				message->fxtime = 0.25;
-				message->holdtime = 5;
-			}
+            // safety check - don't add empty messages
+            if (!message->pMessage || message->pMessage[0] == '\0') 
+            {
+                // clean up custom messages
+                if (!strcmp(message->pName, "Custom")) 
+                {
+                    delete[] message->pMessage;
+                }
+                return; // bail out if message is empty
+            }
 
-			for ( j = 0; j < maxHUDMessages; j++ )
-			{
-				if ( m_pMessages[j] )
-				{
-					// is this message already in the list
-					if ( !strcmp( message->pMessage, m_pMessages[j]->pMessage ) )
-					{
-						if( !strcmp( message->pName, "Custom" ) )
-						{
-							delete[] message->pMessage;
-						}
-						return;
-					}
+            // check for duplicates or overlapping messages
+            for (int j = 0; j < maxHUDMessages; j++)
+            {
+                if (m_pMessages[j])
+                {
+                    // don't add duplicate messages
+                    if (!strcmp(message->pMessage, m_pMessages[j]->pMessage))
+                    {
+                        // clean up if this was a custom message
+                        if (!strcmp(message->pName, "Custom"))
+                        {
+                            delete[] message->pMessage;
+                        }
+                        return; // message already exists
+                    }
 
-					// get rid of any other messages in same location (only one displays at a time)
-					if ( fabs( message->y - m_pMessages[j]->y ) < 0.0001 && fabs( message->x - m_pMessages[j]->x ) < 0.0001 )
-					{
-						if( !strcmp( m_pMessages[j]->pName, "Custom" ) )
-						{
-							delete[] m_pMessages[j]->pMessage;
-						}
-						m_pMessages[j] = NULL;
-					}
-				}
-			}
+                    // don't allow messages at the exact same position
+                    if (fabs(message->y - m_pMessages[j]->y) < 0.0001 && 
+                        fabs(message->x - m_pMessages[j]->x) < 0.0001)
+                    {
+                        // remove the old message at this position
+                        if (!strcmp(m_pMessages[j]->pName, "Custom"))
+                        {
+                            delete[] m_pMessages[j]->pMessage;
+                        }
+                        m_pMessages[j] = nullptr;
+                    }
+                }
+            }
 
-			m_pMessages[i] = message;
-			m_startTime[i] = time;
-			return;
-		}
-	}
+            // everything checks out - add the message
+            m_pMessages[i] = message;
+            m_startTime[i] = time;
+            return;
+        }
+    }
 }
 
 
