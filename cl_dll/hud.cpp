@@ -395,12 +395,6 @@ void CHud :: Init( void )
 
 	//ServersInit();
 
-	gEngfuncs.Cvar_SetValue( "hand", 1 );
-	gEngfuncs.Cvar_SetValue( "sv_skipshield", 1.0f );
-#ifdef __ANDROID__
-	gEngfuncs.Cvar_SetValue( "hud_fastswitch", 1 );
-#endif
-
 	gEngfuncs.Con_Printf( "%s: ^2CS16Client^7 ver. %s initialized.\n", __FUNCTION__, CVAR_GET_STRING( "cscl_ver" ) );
 
 	MsgFunc_ResetHUD(0, 0, NULL );

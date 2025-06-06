@@ -83,6 +83,7 @@ inline struct cvar_s *CVAR_CREATE( const char *cv, const char *val, const int fl
 #define GetScreenInfo (*gEngfuncs.pfnGetScreenInfo)
 #define ServerCmd (*gEngfuncs.pfnServerCmd)
 #define ClientCmd (*gEngfuncs.pfnClientCmd)
+#define FilteredClientCmd (*gEngfuncs.pfnFilteredClientCmd)
 #define AngleVectors (*gEngfuncs.pfnAngleVectors)
 #define Com_RandomLong (*gEngfuncs.pfnRandomLong)
 #define Com_RandomFloat (*gEngfuncs.pfnRandomFloat)
@@ -157,7 +158,7 @@ inline HSPRITE LoadSprite(const char *pszName)
 	return SPR_Load(sz);
 }
 
-extern vec3_t g_ColorRed, g_ColorBlue, g_ColorYellow, g_ColorGrey;
+extern vec3_t g_ColorRed, g_ColorBlue, g_ColorYellow, g_ColorGrey, g_ColorGreen;
 
 inline void GetTeamColor( int &r, int &g, int &b, int teamIndex )
 {

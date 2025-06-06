@@ -25,6 +25,7 @@
 #define RGB_REDISH 0x00FF1010 //255,16,16
 #define RGB_GREENISH 0x0000A000 //0,160,0
 #define RGB_WHITE 0x00FFFFFF
+#define RGB_GRAY 0x00808080
 
 #include <assert.h>
 #include <string.h>
@@ -162,6 +163,13 @@ public:
 	void CalcCrosshairDrawMode();
 	void CalcCrosshairColor();
 
+	static int ScaleForRes( float value, int height );
+	float GetCrosshairGap( int weaponId );
+	void DrawCrosshair( int weaponId );
+	static int GetWeaponAccuracyFlags( int weaponId );
+	void DrawCrosshairSection( int _x0, int _y0, int _x1, int _y1 );
+	void DrawCrosshairPadding( int _pad, int _x0, int _y0, int _x1, int _y1 );
+
 	int DrawWList(float flTime);
 	CHudMsgFunc(CurWeapon);
 	CHudMsgFunc(WeaponList);
@@ -221,6 +229,25 @@ private:
 	HSPRITE m_hStaticSpr;
 	wrect_t m_rcStaticRc;
 	RGBA m_staticRgba;
+
+	cvar_t *xhair_enable;
+
+	cvar_t *xhair_gap;
+	cvar_t *xhair_size;
+	cvar_t *xhair_thick;
+	cvar_t *xhair_pad;
+	cvar_t *xhair_dot;
+	cvar_t *xhair_t;
+	cvar_t *xhair_dynamic_scale;
+	cvar_t *xhair_gap_useweaponvalue;
+	cvar_t *xhair_dynamic_move;
+
+	cvar_t *xhair_color;
+	cvar_t *xhair_additive;
+
+	cvar_t *cl_crosshair_color;
+	cvar_t *cl_crosshair_translucent;
+	cvar_t *hud_draw;
 };
 
 //
