@@ -220,7 +220,7 @@ int CHudSpectatorGui::Draw( float flTime )
 	//{
 		int iLen = DrawUtils::HudStringLen( label.m_szNameAndHealth );
 		GetTeamColor( r, g, b, g_PlayerExtraInfo[ g_iUser2 ].teamnumber );
-		DrawUtils::DrawHudString( ScreenWidth * 0.5 - iLen * 0.5, INT_YPOS(9) - gHUD.GetCharHeight() * 0.5 , ScreenWidth,
+		DrawUtils::DrawHudString( ScreenWidth * 0.5 - iLen * 0.5, ScreenHeight - INT_YPOS(1) * 0.5 - gHUD.GetCharHeight() * 0.5, ScreenWidth,
 								  label.m_szNameAndHealth, r, g, b );
 	//}
 
