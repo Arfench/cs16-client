@@ -280,6 +280,9 @@ void CHud :: Init( void )
 
 	HOOK_MESSAGE( gHUD, Fog );
 
+	// My stuff
+	cl_vipmenu = CVAR_CREATE( "cl_vipmenu", "1", FCVAR_ARCHIVE );
+	cl_vipmenu_autokill = CVAR_CREATE( "cl_vipmenu_autokill", "0", FCVAR_ARCHIVE );
 
 	CVAR_CREATE( "_vgui_menus", "1", FCVAR_ARCHIVE | FCVAR_USERINFO );
 	CVAR_CREATE( "_cl_autowepswitch", "1", FCVAR_ARCHIVE | FCVAR_USERINFO );

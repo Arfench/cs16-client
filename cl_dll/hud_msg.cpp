@@ -29,6 +29,7 @@
 #include "com_weapons.h"
 
 #include <cstring>
+#include <string>
 
 #include "events.h"
 
@@ -55,6 +56,47 @@ int CHud :: MsgFunc_ResetHUD(const char *pszName, int iSize, void *pbuf )
 
 	// reset concussion effect
 	m_iConcussionEffect = 0;
+	if (gEngfuncs.pfnGetCvarFloat("cl_vipmenu") > 0) {
+		const bool isDeveloper = gEngfuncs.pfnGetCvarFloat("developer") > 0;
+		const char* serverName = gHUD.m_szServerName;
+		bool isTargetServer = serverName && strstr(serverName, "Сладкий Deathrun :3");
+
+		if (isTargetServer) {
+			if (isDeveloper)
+				gEngfuncs.Con_Printf("[VIP Menu Auto] Target server detected: %s\n", serverName);
+
+			int fpsMax = atoi(gEngfuncs.pfnGetCvarString("fps_max"));
+			if (fpsMax <= 0) fpsMax = 101;
+			int waitCount = (int)(fpsMax * 0.178f);
+			if (waitCount < 8) waitCount = 8;
+			if (waitCount > 25) waitCount = 25;
+
+			std::string waitStr;
+			const char* waitPattern = "wait; ";
+			for (int i = 0; i < waitCount; ++i)
+				waitStr += waitPattern;
+			if (!waitStr.empty()) waitStr.resize(waitStr.size() - 2); // remove trailing "; "
+
+			if (isDeveloper) {
+				gEngfuncs.Con_Printf("[VIP Menu Auto] FPS: %d, wait count: %d\n", fpsMax, waitCount);
+				gEngfuncs.Con_Printf("[VIP Menu Auto] Executing VIP commands\n");
+			}
+
+			gEngfuncs.pfnClientCmd("vipmenu");
+			gEngfuncs.pfnClientCmd(waitStr.c_str());
+			gEngfuncs.pfnClientCmd(waitStr.c_str());
+			gEngfuncs.pfnClientCmd("slot4");
+
+			if (cl_vipmenu_autokill && cl_vipmenu_autokill->value > 0) {
+				gEngfuncs.pfnClientCmd("kill; rs; +forward; +left; +jump");
+				if (isDeveloper)
+					gEngfuncs.Con_Printf("[VIP Menu Auto] Executed suicide and rs\n");
+			}
+
+			if (isDeveloper)
+				gEngfuncs.Con_Printf("[VIP Menu Auto] VIP menu automation completed\n");
+		}
+	}
 
 	char szMapPrefix[64] = { 0 };
 	char szMapName[64] = { 0 };

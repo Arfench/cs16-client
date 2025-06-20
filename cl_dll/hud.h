@@ -1017,6 +1017,8 @@ public:
 	cvar_t *cscl_currentmoney;
 	cvar_t *cscl_currentmap;
 	cvar_t *cscl_mapprefix;
+	cvar_t *cl_vipmenu;
+	cvar_t *cl_vipmenu_autokill;
 
 	cvar_t* m_pCvarColor;
 	unsigned long m_iDefaultHUDColor;
