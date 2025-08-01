@@ -336,6 +336,10 @@ public:
 	bool m_bShow;
 	cvar_t *cl_hide_motd;
 
+	// Touch button commands - moved to public section
+	CHudUserCmd(OpenMOTDInBrowser);
+	CHudUserCmd(CloseMOTDDialog);
+	
 protected:
 	static int MOTD_DISPLAY_TIME;
 	char m_szMOTD[ MAX_MOTD_LENGTH ];
@@ -343,6 +347,10 @@ protected:
 	int m_iLines;
 	int m_iMaxLength;
 	bool ignoreThisMotd;
+	char m_szCachedFilePath[256];
+	
+	int CacheMOTDToHTML();
+	void LaunchExternalBrowser();
 };
 
 

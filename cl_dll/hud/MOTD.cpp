@@ -32,6 +32,11 @@
 #define strcasestr strstr
 #endif
 
+// HTML cache directory and file constants
+#define HTMLCACHE_DIR "cstrike"
+#define MOTD_CACHE_FILE "cached.html"
+#define MAX_CACHE_PATH 256
+
 int CHudMOTD :: Init( void )
 {
 	gHUD.AddHudElem( this );
@@ -39,6 +44,8 @@ int CHudMOTD :: Init( void )
 	HOOK_MESSAGE( gHUD.m_MOTD, MOTD );
 
 	cl_hide_motd = CVAR_CREATE("cl_hide_motd", "0", FCVAR_ARCHIVE); // hide motd
+	HOOK_COMMAND( gHUD.m_MOTD, "_motd_open_browser", OpenMOTDInBrowser );
+	HOOK_COMMAND( gHUD.m_MOTD, "_motd_close", CloseMOTDDialog );
 	Reset();
 
 	return 1;
@@ -57,75 +64,99 @@ void CHudMOTD :: Reset( void )
 	m_iLines = 0;
 	m_bShow = false;
 	ignoreThisMotd = false;
+	memset(m_szMOTD, 0, sizeof(m_szMOTD));
+	memset(m_szCachedFilePath, 0, sizeof(m_szCachedFilePath));
 }
 
-#define LINE_HEIGHT  13
-#define ROW_GAP  13
-#define ROW_RANGE_MIN 30
-#define ROW_RANGE_MAX ( ScreenHeight - 100 )
+// Cache MOTD content to HTML file
+int CHudMOTD :: CacheMOTDToHTML()
+{
+	// Generate cache file path
+	snprintf(m_szCachedFilePath, sizeof(m_szCachedFilePath), "%s/%s", HTMLCACHE_DIR, MOTD_CACHE_FILE);	
+
+	// Write m_szMOTD as-is (already HTML)
+	FILE *f = fopen(m_szCachedFilePath, "w");
+	if (f)
+	{
+		fwrite(m_szMOTD, 1, strlen(m_szMOTD), f);
+		fclose(f);
+		return 1;
+	}
+	return 0;
+}
+
+// Launch external browser with cached MOTD
+void CHudMOTD :: LaunchExternalBrowser()
+{
+	if (!m_szCachedFilePath[0])
+		return;
+
+	char fullPath[512];
+#if defined(_WIN32)
+	_fullpath(fullPath, m_szCachedFilePath, sizeof(fullPath));
+	char cmd[600];
+	snprintf(cmd, sizeof(cmd), "start \"\" \"%s\"", fullPath);
+#elif defined(__APPLE__)
+	realpath(m_szCachedFilePath, fullPath);
+	char cmd[600];
+	snprintf(cmd, sizeof(cmd), "open \"%s\"", fullPath);
+#else
+	realpath(m_szCachedFilePath, fullPath);
+	char cmd[600];
+	snprintf(cmd, sizeof(cmd), "xdg-open \"%s\"", fullPath);
+#endif
+
+	system(cmd);
+}
+
+// Add command handler functions - these must match the CHudUserCmd declarations
+void CHudMOTD :: UserCmd_OpenMOTDInBrowser()
+{
+	LaunchExternalBrowser();
+	Reset();
+}
+
+void CHudMOTD :: UserCmd_CloseMOTDDialog()
+{
+	Reset();
+}
+
+// Modify Draw function to handle mouse clicks
 int CHudMOTD :: Draw( float fTime )
 {
-	gHUD.m_iNoConsolePrint &= ~( 1 << 1 );
-	if( !m_bShow )
+	if ( !m_bShow )
 		return 1;
 
-	if( cl_hide_motd->value )
-	{
-		Reset();
-		return 1;
-	}
+	int dialogWidth = 400;
+	int dialogHeight = 200;
+	int dialogX = (ScreenWidth - dialogWidth) / 2;
+	int dialogY = (ScreenHeight - dialogHeight) / 2;
 
-	gHUD.m_iNoConsolePrint |= 1 << 1;
-	// find the top of where the MOTD should be drawn,  so the whole thing is centered in the screen
-	int ypos = (ScreenHeight - LINE_HEIGHT * m_iLines)/2; // shift it up slightly
-	char *ch = m_szMOTD;
-	int xpos = (ScreenWidth - gHUD.GetCharWidth( 'M' ) * m_iMaxLength) / 2;
-	if( xpos < 30 ) xpos = 30;
-	int xmax = xpos + gHUD.GetCharWidth( 'M' ) * m_iMaxLength;
-	int height = LINE_HEIGHT * m_iLines;
-	int ypos_r=ypos;
-	if( height > ROW_RANGE_MAX )
-	{
-		ypos = ROW_RANGE_MIN + 7 + scroll;
-		if( ypos  > ROW_RANGE_MIN + 4 )
-			scroll-= (ypos - ( ROW_RANGE_MIN + 4))/3.0;
-		if( ypos + height < ROW_RANGE_MAX )
-			scroll+= (ROW_RANGE_MAX - (ypos + height))/ 3.0;
-		ypos_r = ROW_RANGE_MIN;
-		height = ROW_RANGE_MAX;
-	}
-	if( xmax > ScreenWidth - 30 ) xmax = ScreenWidth - 30;
-	char *next_line;
-	DrawUtils::DrawRectangle(xpos-5, ypos_r - 5, xmax - xpos+10, height + 10);
-	while ( *ch )
-	{
-		int line_length = 0;  // count the length of the current line
-		for ( next_line = ch; *next_line != '\n' && *next_line != 0; next_line++ )
-			line_length += gHUD.GetCharWidth( (unsigned char)*next_line );
-		char *top = next_line;
-		if ( *top == '\n' )
-			*top = 0;
-		else
-			top = NULL;
+	DrawUtils::DrawRectangle(dialogX, dialogY, dialogWidth, dialogHeight, 0, 0, 0, 200);
+	DrawUtils::DrawRectangle(dialogX, dialogY, dialogWidth, 2, 255, 255, 255, 255); // top
+	DrawUtils::DrawRectangle(dialogX, dialogY + dialogHeight - 2, dialogWidth, 2, 255, 255, 255, 255); // bottom
+	DrawUtils::DrawRectangle(dialogX, dialogY, 2, dialogHeight, 255, 255, 255, 255); // left
+	DrawUtils::DrawRectangle(dialogX + dialogWidth - 2, dialogY, 2, dialogHeight, 255, 255, 255, 255); // right
 
-		// find where to start drawing the line
-		if( (ypos > ROW_RANGE_MIN) && (ypos + LINE_HEIGHT <= ypos_r + height) )
-			DrawUtils::DrawHudString( xpos, ypos, xmax, ch, 255, 180, 0 );
+	const char* title = "MOTD - External Browser";
+	const char* line1 = "Press O to open MOTD in your default browser.";
+	const char* line2 = "Press ESC or C to close this dialog.";
 
-		ypos += LINE_HEIGHT;
+	int titleWidth = DrawUtils::ConsoleStringLen(title);
+	int line1Width = DrawUtils::ConsoleStringLen(line1);
+	int line2Width = DrawUtils::ConsoleStringLen(line2);
 
-		if ( top )  // restore 
-			*top = '\n';
-		ch = next_line;
-		if ( *ch == '\n' )
-			ch++;
+	int centerX = dialogX + (dialogWidth - titleWidth) / 2;
+	int centerLine1X = dialogX + (dialogWidth - line1Width) / 2;
+	int centerLine2X = dialogX + (dialogWidth - line2Width) / 2;
 
-		if ( ypos > (ScreenHeight - 20) )
-			break;  // don't let it draw too low
-	}
-	
+	DrawUtils::DrawConsoleString(centerX, dialogY + 20, title);
+	DrawUtils::DrawConsoleString(centerLine1X, dialogY + 60, line1);
+	DrawUtils::DrawConsoleString(centerLine2X, dialogY + 90, line2);
+
 	return 1;
 }
+
 
 int CHudMOTD :: MsgFunc_MOTD( const char *pszName, int iSize, void *pbuf )
 {
@@ -145,42 +176,14 @@ int CHudMOTD :: MsgFunc_MOTD( const char *pszName, int iSize, void *pbuf )
 	int is_finished = reader.ReadByte();
 	strcat( m_szMOTD, reader.ReadString() );
 
-	// we still don't support html tags in motd :(
-	if( strcasestr( m_szMOTD, "<!DOCTYPE HTML>" ) )
-	{
-		Reset();
-		ignoreThisMotd = true;
-	}
-
 	if ( is_finished )
-	{
-		int length = 0;
-		
-		m_iMaxLength = 0;
-		m_iFlags |= HUD_DRAW;
-
-
-		for ( char *sz = m_szMOTD; *sz != 0; sz++ )  // count the number of lines in the MOTD
+	{	
+		// Cache MOTD to HTML file
+		if (CacheMOTDToHTML())
 		{
-			if ( *sz == '\n' )
-			{
-				m_iLines++;
-				if( length > m_iMaxLength )
-				{
-					m_iMaxLength = length;
-					length = 0;
-				}
-			}
-			length++;
+			m_iFlags |= HUD_DRAW;
+			m_bShow = true;
 		}
-		
-		m_iLines++;
-		if( length > m_iMaxLength )
-		{
-			m_iMaxLength = length;
-			length = 0;
-		}
-		m_bShow = true;
 	}
 
 	return 1;
