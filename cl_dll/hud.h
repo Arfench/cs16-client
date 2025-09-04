@@ -336,6 +336,10 @@ public:
 	bool m_bShow;
 	cvar_t *cl_hide_motd;
 
+	// Touch button commands - moved to public section
+	CHudUserCmd(OpenMOTDInBrowser);
+	CHudUserCmd(CloseMOTDDialog);
+	
 protected:
 	static int MOTD_DISPLAY_TIME;
 	char m_szMOTD[ MAX_MOTD_LENGTH ];
@@ -343,6 +347,10 @@ protected:
 	int m_iLines;
 	int m_iMaxLength;
 	bool ignoreThisMotd;
+	char m_szCachedFilePath[256];
+	
+	int CacheMOTDToHTML();
+	void LaunchExternalBrowser();
 };
 
 
@@ -362,6 +370,8 @@ public:
 	void DeathMsg( int killer, int victim );
 	void SetScoreboardDefaults( void );
 	void GetAllPlayersInfo( void );
+
+	bool ShouldDrawScoreboard() const;
 
 	CHudUserCmd(ShowScores);
 	CHudUserCmd(HideScores);
@@ -973,6 +983,7 @@ public:
 	{
 		return m_scrinfo.charWidths[ ch ];
 	}
+
 	inline int GetCharHeight( )
 	{
 		return m_scrinfo.iCharHeight;
@@ -1013,10 +1024,6 @@ public:
 	cvar_t *cl_gunsmoke;
 	cvar_t *hud_textmode;
 	cvar_t *hud_colored;
-#ifdef __ANDROID__
-	cvar_t *cl_android_force_defaults;
-#endif
-	cvar_t *hud_scale;
 	cvar_t *cscl_currentmoney;
 	cvar_t *cscl_currentmap;
 	cvar_t *cscl_mapprefix;
