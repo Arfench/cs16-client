@@ -27,21 +27,11 @@ jobs:
       - name: Build
         run: ./gradlew assembleCi
         working-directory: android
-      - name: Sign APK
-        uses: r0adkll/sign-android-release@v1
-        with:
-          releaseDirectory: android/app/build/outputs/apk/ci
-          signingKeyBase64: ${{ secrets.SIGNING_KEY }}
-          alias: ${{ secrets.ALIAS }}
-          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
-          keyPassword: ${{ secrets.KEY_PASSWORD }}
-        env:
-          BUILD_TOOLS_VERSION: "34.0.0"
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Android
-          path: android/app/build/outputs/apk/ci/app-ci-unsigned-signed.apk
+          path: android/app/build/outputs/apk/ci/app-ci-unsigned.apk
   psvita:
     name: PS Vita
     runs-on: ubuntu-latest
@@ -168,7 +158,7 @@ jobs:
           repo: ${{ env.GITHUB_REPOSITORY }}
       - name: Prepare release
         run: |
-          mv Android/app-ci-unsigned-signed.apk CS16Client-Android.apk
+          mv Android/app-ci-unsigned.apk CS16Client-Android.apk
 
           mv */*.zip .
           mv */*.tar.gz .
