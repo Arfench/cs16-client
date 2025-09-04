@@ -25,6 +25,7 @@
 #include "triangleapi.h"
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "draw_util.h"
 #include "build.h"
 
@@ -97,13 +98,24 @@ void CHudMOTD :: LaunchExternalBrowser()
 	char cmd[600];
 	snprintf(cmd, sizeof(cmd), "start \"\" \"%s\"", fullPath);
 #elif defined(__APPLE__)
-	realpath(m_szCachedFilePath, fullPath);
+	char *resolved = realpath(m_szCachedFilePath, NULL);
+	const char *pathForCmd = resolved ? resolved : m_szCachedFilePath;
 	char cmd[600];
-	snprintf(cmd, sizeof(cmd), "open \"%s\"", fullPath);
+	snprintf(cmd, sizeof(cmd), "open \"%s\"", pathForCmd);
+	if (resolved) free(resolved);
+#elif defined(__ANDROID__)
+	char *resolved = realpath(m_szCachedFilePath, NULL);
+	const char *pathForCmd = resolved ? resolved : m_szCachedFilePath;
+	char cmd[700];
+	// Use Android Activity Manager to open in a browser
+	snprintf(cmd, sizeof(cmd), "/system/bin/am start -a android.intent.action.VIEW -d \"file://%s\" -t \"text/html\"", pathForCmd);
+	if (resolved) free(resolved);
 #else
-	realpath(m_szCachedFilePath, fullPath);
+	char *resolved = realpath(m_szCachedFilePath, NULL);
+	const char *pathForCmd = resolved ? resolved : m_szCachedFilePath;
 	char cmd[600];
-	snprintf(cmd, sizeof(cmd), "xdg-open \"%s\"", fullPath);
+	snprintf(cmd, sizeof(cmd), "xdg-open \"%s\"", pathForCmd);
+	if (resolved) free(resolved);
 #endif
 
 	system(cmd);
