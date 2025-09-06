@@ -123,49 +123,11 @@ jobs:
         with:
           name: ${{ runner.os }}-${{ matrix.arch }}
           path: build/*.tar.gz
-  macos:
-    name: macOS
-    runs-on: macos-latest
-    strategy:
-      matrix:
-        arch: [ 'x86_64', 'arm64' ]
-      fail-fast: false
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-          submodules: recursive
-      - name: Install dependencies
-        run: |
-          arch -${{ matrix.arch }} /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-          if [ "${{ matrix.arch }}" == "arm64" ]; then
-            arch -${{ matrix.arch }} brew install cmake gcc ninja fontconfig
-          else
-            arch -${{ matrix.arch }} /usr/local/bin/brew install cmake gcc ninja fontconfig
-          fi
-      - name: Configure
-        run: cmake --preset "macos-ci-${{ matrix.arch }}"
-      - name: Build and Package
-        run: |
-          if [ "${{ matrix.arch }}" == "arm64" ]; then
-            arch -${{ matrix.arch }} cmake --build .
-            arch -${{ matrix.arch }} cpack --config CPackConfig.cmake
-          else
-            arch -${{ matrix.arch }} /usr/local/bin/cmake --build .
-            arch -${{ matrix.arch }} /usr/local/bin/cpack --config CPackConfig.cmake
-          fi
-        working-directory: build
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ runner.os }}-${{ matrix.arch }}
-          path: build/*.zip
   release:
     name: Release
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-    needs: [ android, windows, linux, psvita, macos ]
+    needs: [ android, windows, linux, psvita ]
     steps:
       - name: Fetch artifacts
         uses: actions/download-artifact@v4
