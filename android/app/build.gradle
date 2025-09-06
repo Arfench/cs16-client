@@ -2,83 +2,105 @@ import java.time.LocalDateTime
 import java.time.Month
 import java.time.temporal.ChronoUnit
 
-apply plugin: 'com.android.application'
+apply plugin: "com.android.application"
 
 android {
-    namespace 'su.xash.cs16client'
-    ndkVersion = "27.2.12479018"
-    compileSdk 35
+	namespace = "su.xash.cs16client"
+	ndkVersion = "28.2.13676358"
+	compileSdk = 36
 
-    defaultConfig {
-        applicationId 'su.xash.cs16client'
-        versionName '1.35'
-        versionCode getBuildNum()
-        minSdkVersion 21
-        targetSdk 35
-    }
+	defaultConfig {
+		applicationId = "su.xash.cs16client"
+		versionName = "1.35-" + getGitHash()
+		versionCode = getBuildNum()
+		minSdk = 21
+		targetSdk = 36
+	}
 
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11
-        targetCompatibility JavaVersion.VERSION_11
-    }
+	compileOptions {
+		sourceCompatibility = JavaVersion.VERSION_11
+		targetCompatibility = JavaVersion.VERSION_11
+	}
 
-    externalNativeBuild {
-        cmake {
-            version '3.22.1'
-            path file('../../CMakeLists.txt')
-        }
-    }
+	externalNativeBuild {
+		cmake {
+			version = "3.22.1"
+			path file("../../CMakeLists.txt")
+		}
+	}
 
-    lint {
-        abortOnError false
-    }
+	lint {
+		abortOnError = false
+	}
 
-    androidResources {
-        noCompress += ""
-    }
+	packaging {
+		jniLibs {
+			keepDebugSymbols.add("**/*.so")
+			useLegacyPackaging = true
+		}
+	}
 
-    packaging {
-        jniLibs {
-            keepDebugSymbols.add("**/*.so")
-        }
-    }
+	signingConfigs {
+		debug {}
+	}
 
-    sourceSets {
-        main {
-            assets {
-                srcDirs += ["${project.projectDir}/../../3rdparty/cs16client-extras", "${project.projectDir}/../../3rdparty/yapb/cfg"]
-            }
-        }
-    }
+	buildTypes {
+		debug {
+			debuggable = true
+			applicationIdSuffix = ".test"
 
-    buildTypes {
-        debug {
-            minifyEnabled false
-            shrinkResources false
-            debuggable true
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
-        }
+			proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.txt"
+		}
 
-        release {
-            minifyEnabled false
-            shrinkResources false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
-        }
+		release {
+			minifyEnabled = true
+			shrinkResources = true
 
-        register("ci") {
-            initWith(getByName("release"))
+			proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.txt"
+		}
 
-            externalNativeBuild.cmake {
-                arguments "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
-            }
-        }
-    }
+		create("continuous") {
+			initWith(getByName("release"))
+			applicationIdSuffix = ".test"
+			signingConfig = signingConfigs.debug
+		}
+	}
+
+	flavorDimensions += "version"
+
+	productFlavors {
+		create("googlePlay") {
+			dimension = "version"
+			applicationId = "in.celest.xash3d.cs16client"
+			buildConfigField("Boolean", "IS_GOOGLE_PLAY_BUILD", "true")
+		}
+
+		create("git") {
+			dimension = "version"
+			buildConfigField("Boolean", "IS_GOOGLE_PLAY_BUILD", "false")
+		}
+	}
+
+	buildFeatures {
+		buildConfig = true
+	}
 }
 
 static def getBuildNum() {
-    LocalDateTime now = LocalDateTime.now()
-    LocalDateTime releaseDate = LocalDateTime.of(2015, Month.OCTOBER, 29, 0, 0, 0)
-    int qBuildNum = releaseDate.until(now, ChronoUnit.DAYS)
-    int minuteOfDay = now.getHour() * 60 + now.getMinute()
-    return qBuildNum * 10000 + minuteOfDay
+	LocalDateTime now = LocalDateTime.now()
+	LocalDateTime releaseDate = LocalDateTime.of(2015, Month.OCTOBER, 29, 0, 0, 0)
+	int qBuildNum = releaseDate.until(now, ChronoUnit.DAYS)
+	int minuteOfDay = now.getHour() * 60 + now.getMinute()
+	return qBuildNum * 10000 + minuteOfDay
+}
+
+def getGitHash() {
+	Process process = new ProcessBuilder("git", "rev-parse", "--short", "HEAD")
+			.directory(project.rootDir)
+			.redirectErrorStream(true)
+			.start()
+	InputStreamReader inputStreamReader = new InputStreamReader(process.getInputStream())
+	BufferedReader bufferedReader = new BufferedReader(inputStreamReader)
+
+	return bufferedReader.getText().trim()
 }
