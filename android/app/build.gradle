@@ -42,15 +42,6 @@ android {
 
 	signingConfigs {
 		debug {}
-
-		continuous {
-			if (System.getenv('KEYSTORE_FILE_PATH') != null) {
-				storeFile = file(System.getenv('KEYSTORE_FILE_PATH'))
-				storePassword = System.getenv('KEYSTORE_PASSWORD')
-				keyAlias = System.getenv('KEY_ALIAS')
-				keyPassword = System.getenv('KEY_PASSWORD')
-			}
-		}
 	}
 
 	buildTypes {
@@ -71,7 +62,7 @@ android {
 		create("continuous") {
 			initWith(getByName("release"))
 			applicationIdSuffix = ".test"
-			signingConfig = signingConfigs.continuous
+			signingConfig = signingConfigs.debug
 		}
 	}
 
